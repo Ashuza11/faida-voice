@@ -1,6 +1,5 @@
 import { boolean, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
-
-export const eventKinds = ["SALE", "DEBT", "PAYMENT", "STOCK_IN", "SAVING", "CORRECTION"] as const
+import { eventKinds } from "@/lib/events"
 
 export const vendors = pgTable("vendors", {
   id: uuid("id").primaryKey().defaultRandom(),

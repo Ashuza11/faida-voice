@@ -28,3 +28,12 @@ A research agent searched for Kinyarwanda numeral and money vocabulary before im
 ## `lib/db/repositories/events.ts` idempotency test is skipped, not verified (2026-08-12)
 
 `tests/lib/db/repositories/events.test.ts` exercises the §3.5 requirement that posting the same `client_event_id` twice creates one row, not two. It's gated with `describe.skipIf(!process.env.DATABASE_URL)` and currently shows as **skipped** in every run — no `DATABASE_URL` is configured yet (see `.env.local.example`), so this behavior has not actually been run against a real Neon branch. Treat idempotency as implemented-but-unverified until a Neon connection string is added and this test is seen passing, not skipped. `lib/db/client.ts` was made lazy (a `Proxy` that only resolves `DATABASE_URL` on first use) specifically so importing it doesn't crash the whole test file before `skipIf` can act.
+
+## Offline queue and sync endpoint (2026-08-12)
+
+Built the client-side write path and its server counterpart, both independent of the Kinyarwanda gaps above:
+
+- **`lib/db/local.ts`** — Dexie table for queuing events locally before sync (§3.7/§3.8). Tested with the `fake-indexeddb` devDependency, since jsdom has no real IndexedDB. `eventKinds`/`EventKind` were pulled out of `lib/db/schema.ts` into a dependency-free `lib/events.ts` so this client-side module doesn't pull `drizzle-orm/pg-core` into the browser bundle (§8's 200KB budget).
+- **`app/api/sync/route.ts`** — POST endpoint, Zod-validates the body (`lib/sync/schema.ts`) then calls `insertEvent` — no Drizzle calls in the route itself (§3.2). Validation failure is a real 400, not a fallback to UNKNOWN — that fallback is specifically for ambiguous NLU output (`lib/nlu/intent.ts`), not malformed HTTP requests.
+- The route's persistence/idempotency test is `skipIf`-gated the same way as the repository test above — same reason, same unblock (a real `DATABASE_URL`).
+- **Not yet built:** anything that actually calls this endpoint from the client (a sync loop with retry/backoff per §6), and the confirmation-queue UI. Queuing and syncing exist as isolated, tested units, not yet wired together end to end.
