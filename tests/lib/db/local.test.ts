@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto"
 import { beforeEach, describe, expect, it } from "vitest"
-import { getUnsyncedEvents, localDb, markSynced, queueEvent } from "@/lib/db/local"
+import { getEventsForVendor, getUnsyncedEvents, localDb, markSynced, queueEvent } from "@/lib/db/local"
 
 beforeEach(async () => {
   await localDb.events.clear()
@@ -61,5 +61,17 @@ describe("markSynced", () => {
 
     const stored = await localDb.events.get("c")
     expect(stored?.syncedAt).toBeInstanceOf(Date)
+  })
+})
+
+describe("getEventsForVendor", () => {
+  it("returns only events belonging to the given vendor", async () => {
+    await queueEvent({ clientEventId: "v1-a", vendorId: "vendor-1", kind: "SALE", payload: {}, occurredAt: new Date(), source: "voice" })
+    await queueEvent({ clientEventId: "v1-b", vendorId: "vendor-1", kind: "SAVING", payload: {}, occurredAt: new Date(), source: "tap" })
+    await queueEvent({ clientEventId: "v2-a", vendorId: "vendor-2", kind: "SALE", payload: {}, occurredAt: new Date(), source: "voice" })
+
+    const events = await getEventsForVendor("vendor-1")
+
+    expect(events.map((event) => event.clientEventId).sort()).toEqual(["v1-a", "v1-b"])
   })
 })
