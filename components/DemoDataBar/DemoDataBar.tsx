@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { seedDemoData } from "@/lib/db/seed"
 
@@ -13,6 +15,7 @@ type Status = "idle" | "loading" | "done"
  */
 export default function DemoDataBar() {
   const [status, setStatus] = useState<Status>("idle")
+  const pathname = usePathname()
 
   async function handleClick() {
     setStatus("loading")
@@ -22,7 +25,15 @@ export default function DemoDataBar() {
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-lighter px-4 py-2">
-      <span className="text-sm font-semibold text-heading">Faida</span>
+      <nav className="flex items-center gap-4">
+        <span className="text-sm font-semibold text-heading">Faida</span>
+        <Link href="/record" className={pathname === "/record" ? "text-heading" : "text-body"}>
+          Record
+        </Link>
+        <Link href="/report" className={pathname === "/report" ? "text-heading" : "text-body"}>
+          Report
+        </Link>
+      </nav>
       <button
         type="button"
         onClick={handleClick}

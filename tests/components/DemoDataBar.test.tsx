@@ -23,4 +23,11 @@ describe("DemoDataBar", () => {
     expect(await screen.findByRole("button", { name: /demo data loaded/i })).toBeDisabled()
     expect(await localDb.vendors.count()).toBe(2)
   })
+
+  it("links to /record and /report so the two pages are reachable from each other", () => {
+    render(<DemoDataBar />)
+
+    expect(screen.getByRole("link", { name: "Record" })).toHaveAttribute("href", "/record")
+    expect(screen.getByRole("link", { name: "Report" })).toHaveAttribute("href", "/report")
+  })
 })
