@@ -53,7 +53,7 @@ const UnknownIntentSchema = z.object({
   raw: z.string(),
 })
 
-const IntentSchema = z.discriminatedUnion("kind", [
+export const IntentSchema = z.discriminatedUnion("kind", [
   SaleIntentSchema,
   DebtIntentSchema,
   PaymentIntentSchema,

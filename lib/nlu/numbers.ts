@@ -38,3 +38,28 @@ export function parseKinyarwandaNumber(input: string): number | null {
   const normalized = input.trim().toLowerCase().replace(/\s+/g, " ")
   return normalized in VERIFIED_NUMBER_WORDS ? VERIFIED_NUMBER_WORDS[normalized] : null
 }
+
+const NUMBER_PHRASES_BY_LENGTH_DESC = Object.keys(VERIFIED_NUMBER_WORDS).sort((a, b) => b.length - a.length)
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+/**
+ * Scans a transcript for a verified Kinyarwanda number word/phrase embedded
+ * anywhere in it (unlike parseKinyarwandaNumber, which requires an exact
+ * whole-string match). Word-boundary matched, so "kane" (4) does not match
+ * inside an unrelated longer word. When multiple phrases could match, the
+ * longest one wins (checked first) — this matters for multi-word phrases
+ * like "ibihumbi bibiri" so they aren't only partially recognized.
+ */
+export function findKinyarwandaNumber(transcript: string): number | null {
+  const normalized = transcript.toLowerCase()
+  for (const phrase of NUMBER_PHRASES_BY_LENGTH_DESC) {
+    const pattern = new RegExp(`\\b${escapeRegExp(phrase)}\\b`)
+    if (pattern.test(normalized)) {
+      return VERIFIED_NUMBER_WORDS[phrase]
+    }
+  }
+  return null
+}

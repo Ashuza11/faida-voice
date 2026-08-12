@@ -25,6 +25,10 @@ A research agent searched for Kinyarwanda numeral and money vocabulary before im
 
 **Next step to unblock:** get a native Kinyarwanda speaker (or real transcribed vendor phrases) to (a) confirm/correct the noun-class prefix rules and tens 40–90, and (b) supply real example sale/debt/payment sentences for `fixtures/utterances.rw.json`, which is still empty for exactly this reason.
 
+## Neon connected, idempotency verified (2026-08-12, update)
+
+A real `DATABASE_URL` was added to `.env.local` and `drizzle-kit push` created `vendors`/`products`/`customers`/`events` in Neon. All 88 tests now pass with none skipped — the event/sync idempotency tests below are no longer "implemented but unverified," they've actually run green against the real branch. One transient `fetch failed` on a cold first connection resolved on retry — not a real issue, just noted in case it recurs. The section below is kept for history/context on why the tests were written the way they were.
+
 ## `lib/db/repositories/events.ts` idempotency test is skipped, not verified (2026-08-12)
 
 `tests/lib/db/repositories/events.test.ts` exercises the §3.5 requirement that posting the same `client_event_id` twice creates one row, not two. It's gated with `describe.skipIf(!process.env.DATABASE_URL)` and currently shows as **skipped** in every run — no `DATABASE_URL` is configured yet (see `.env.local.example`), so this behavior has not actually been run against a real Neon branch. Treat idempotency as implemented-but-unverified until a Neon connection string is added and this test is seen passing, not skipped. `lib/db/client.ts` was made lazy (a `Proxy` that only resolves `DATABASE_URL` on first use) specifically so importing it doesn't crash the whole test file before `skipIf` can act.
