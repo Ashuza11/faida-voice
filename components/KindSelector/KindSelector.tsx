@@ -1,8 +1,8 @@
 "use client"
 
-import type { EventKind } from "@/lib/events"
+import type { RecordableKind } from "@/lib/events"
 
-export type RecordableKind = Extract<EventKind, "SALE" | "DEBT" | "PAYMENT" | "SAVING">
+export type { RecordableKind } from "@/lib/events"
 
 // Kinyarwanda labels use only already source-verified action verbs
 // (ASSUMPTIONS.md). "Debt" has no single confident word — umwenda/ideni are
