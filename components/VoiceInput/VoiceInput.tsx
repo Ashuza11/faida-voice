@@ -34,6 +34,8 @@ export interface VoiceInputProps {
   onTranscript: (transcript: string) => void
 }
 
+type MicStatus = "idle" | "listening" | "no-speech" | "error"
+
 function getRecognitionConstructor(): SpeechRecognitionConstructor | null {
   if (typeof window === "undefined") {
     return null
@@ -52,6 +54,11 @@ function getRecognitionConstructor(): SpeechRecognitionConstructor | null {
  * Google STT integration that needs a credential not yet configured — see
  * ASSUMPTIONS.md for what still needs a real-browser manual check.
  *
+ * micStatus exists so every outcome (listening, nothing recognized, an
+ * error) is visible on screen — a silent no-op here is indistinguishable
+ * from the app being broken, which is exactly what it looked like before
+ * this had any status text at all.
+ *
  * Emits the raw transcript via onTranscript for either path — it does not
  * classify or validate the text itself, so the caller runs the same
  * classify.ts (and, on ambiguous matches, extract-llm.ts) pipeline
@@ -59,6 +66,7 @@ function getRecognitionConstructor(): SpeechRecognitionConstructor | null {
  */
 export default function VoiceInput({ onTranscript }: VoiceInputProps) {
   const [listening, setListening] = useState(false)
+  const [micStatus, setMicStatus] = useState<MicStatus>("idle")
   const [typedText, setTypedText] = useState("")
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const supported = getRecognitionConstructor() !== null
@@ -74,15 +82,26 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript
       if (transcript) {
+        setMicStatus("idle")
         onTranscript(transcript)
+      } else {
+        setMicStatus("no-speech")
       }
     }
-    recognition.onerror = () => setListening(false)
+    recognition.onerror = () => {
+      setListening(false)
+      setMicStatus("error")
+    }
     recognition.onend = () => setListening(false)
 
     recognitionRef.current = recognition
-    recognition.start()
-    setListening(true)
+    try {
+      recognition.start()
+      setListening(true)
+      setMicStatus("listening")
+    } catch {
+      setMicStatus("error")
+    }
   }
 
   function stopListening() {
@@ -118,8 +137,17 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
         </svg>
       </button>
 
-      {/* TODO: Kinyarwanda copy — "speak/hold" isn't in the verified word list yet (ASSUMPTIONS.md) */}
+      {/* TODO: Kinyarwanda copy needed for all of this status text — see the translation list */}
       {!supported && <p className="text-sm text-body">Voice input isn&apos;t supported here — type instead.</p>}
+      {supported && micStatus === "listening" && (
+        <p className="text-sm font-semibold text-heading">Listening… release to send</p>
+      )}
+      {supported && micStatus === "no-speech" && (
+        <p className="text-sm text-error">Didn&apos;t catch that — try again or type below.</p>
+      )}
+      {supported && micStatus === "error" && (
+        <p className="text-sm text-error">Couldn&apos;t hear you — try again or type below.</p>
+      )}
 
       <div className="flex w-full gap-2">
         <input

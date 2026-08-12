@@ -122,4 +122,37 @@ describe("VoiceInput — supported browser", () => {
     expect(instances).toHaveLength(1)
     expect(instances[0].lang).toBe("rw-RW")
   })
+
+  it("shows a listening indicator the moment recording starts, not silence", () => {
+    installCapturingRecognition()
+    render(<VoiceInput onTranscript={vi.fn()} />)
+
+    fireEvent.mouseDown(screen.getByRole("button", { name: /hold to speak/i }))
+
+    expect(screen.getByText(/listening/i)).toBeInTheDocument()
+  })
+
+  it("shows a visible message, and does not call onTranscript, when nothing was recognized", async () => {
+    const instances = installCapturingRecognition()
+    const onTranscript = vi.fn()
+    render(<VoiceInput onTranscript={onTranscript} />)
+
+    fireEvent.mouseDown(screen.getByRole("button", { name: /hold to speak/i }))
+    instances[0].onresult?.({ results: [] })
+
+    expect(await screen.findByText(/didn't catch that/i)).toBeInTheDocument()
+    expect(onTranscript).not.toHaveBeenCalled()
+  })
+
+  it("shows a visible message, and does not call onTranscript, when recognition errors", async () => {
+    const instances = installCapturingRecognition()
+    const onTranscript = vi.fn()
+    render(<VoiceInput onTranscript={onTranscript} />)
+
+    fireEvent.mouseDown(screen.getByRole("button", { name: /hold to speak/i }))
+    instances[0].onerror?.()
+
+    expect(await screen.findByText(/couldn't hear you/i)).toBeInTheDocument()
+    expect(onTranscript).not.toHaveBeenCalled()
+  })
 })
